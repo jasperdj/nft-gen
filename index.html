@@ -1,0 +1,129 @@
+<!--
+- Download multiple pictures 
+- Merge image
+- Write 
+
+ -->
+
+<!-- https://code.jquery.com/ --> 
+<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+
+
+<a id="show-uploads" href="#">Show uploaded imaged</a>
+
+<a id="download-all" href="#">Download all</a>
+
+<input type="file" multiple id="file_input">
+
+<canvas id="myCanvas"></canvas>
+
+<script>
+
+
+
+inputImages = [];
+
+function callback(e) { console.log("callback") }
+
+var c=document.getElementById("myCanvas");
+var ctx=c.getContext("2d");
+var imageObj1 = new Image();
+var imageObj2 = new Image();
+imageObj1.onload = callback;
+imageObj2.onload = callback;
+imageObj1.crossOrigin="anonymous";
+imageObj2.crossOrigin="anonymous";
+imageObj1.src = "a_0.png"
+imageObj1.onload = function() {
+   ctx.drawImage(imageObj1, 0, 0, 328, 526);
+   imageObj2.src = "b_0.png";
+   imageObj2.onload = function() {
+      ctx.drawImage(imageObj2, 15, 85, 300, 300);
+      var img = c.toDataURL("image/png");
+      document.write('<img crossorigin="anonymous" src="' + img + '" width="328" height="526"/>');
+   }
+};
+
+
+$('#show-uploads').click(function(){
+  for(var i=0; i < inputImages.length; i++) {
+    ctx.drawImage(inputImages[i], 32*i, 0, 32, 32)
+  }
+})
+
+
+inputImagesTree = {};
+errors = []
+
+function error(str) { 
+	errors.push(str);
+	console.log(errors[errors.length-1]); 
+ }
+
+const filenameRegex = new RegExp("^[a-zA-Z0-9]{1,}_[0-9]{1,}\.[a-zA-Z]{1,}$")
+
+$("#file_input").change(function(e){
+    for (var i =0; i < e.target.files.length; i++) { 
+       var URL = window.webkitURL || window.URL;
+       var url = URL.createObjectURL(e.target.files[i]);
+       var img = new Image();
+       img.src = url;
+	filename=e.target.files[i].name;
+       
+    if (filenameRegex.test(filename) == false) {
+	error("Image has incorrect filename: " + filename + ", it must follow: " + filenameRegex.source)
+	continue;
+	}
+
+
+	const component= filename.split("_")[0];
+        const id= filename.split("_")[1].split(".")[0];
+       
+ 	if (!inputImagesTree[component]) inputImagesTree[component] = [];
+
+	if (inputImagesTree[component].find(item => item.id == id)) {
+           error("Duplicate file for: " + filename);
+           continue;
+        }
+
+        inputImagesTree[component].push({id: id, img: img, loaded:false})
+       img.onload = function(e, file) {
+            inputImagesTree[component].find(item => item.img == e.path[0]).loaded = true	
+
+       }
+   
+    }
+    
+});
+
+
+
+var filesForDownload = [];
+filesForDownload.push( { path: "spongebob.jpg", name: "spongebob.jpg" } );
+filesForDownload.push( { path: "spongebob2.jpg", name: "spongebob2.jpg" } );
+
+$('#download-all').click( function( e )
+{
+    console.log("Click")
+    e.preventDefault();
+
+    var temporaryDownloadLink = document.createElement("a");
+    temporaryDownloadLink.style.display = 'none';
+
+    document.body.appendChild( temporaryDownloadLink );
+
+    for( var n = 0; n < filesForDownload.length; n++ )
+    {
+        var download = filesForDownload[n];
+        temporaryDownloadLink.setAttribute('href', 'data:application/octet-stream,' + encodeURIComponent( download.path));
+	temporaryDownloadLink.setAttribute( 'target', '_blank' );
+        temporaryDownloadLink.setAttribute( 'download', download.name );
+
+        temporaryDownloadLink.click();
+	
+    }
+
+    document.body.removeChild( temporaryDownloadLink );
+} );
+
+</script>
